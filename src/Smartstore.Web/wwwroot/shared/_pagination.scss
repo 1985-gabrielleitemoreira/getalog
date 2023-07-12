@@ -1,0 +1,75 @@
+/// <reference path="_variables-shared.scss" />
+/// <reference path="_mixins.scss" />
+/// <reference path="../lib/bs4/scss/bootstrap.scss" />
+
+.pagination {
+    flex-wrap: wrap;
+    --pag-size: #{$input-height};
+    --pag-border-radius: #{$border-radius};
+    --pag-margin: 3px;
+    --pag-padding-x: #{$pagination-padding-x};
+    --pag-font-size: #{$font-size-base};
+    margin-top: calc(var(--pag-margin) * -1);
+    margin-bottom: calc(var(--pag-margin) * -1);
+}
+
+.pagination-lg {
+    --pag-size: #{$input-height-lg};
+    --pag-border-radius: #{$border-radius-lg};
+    --pag-margin: 4px;
+    --pag-padding-x: #{$pagination-padding-x-lg};
+    --pag-font-size: #{$font-size-lg};
+}
+
+.pagination-sm,
+.pagination-xs {
+    --pag-border-radius: #{$border-radius-sm};
+    --pag-margin: 2px;
+}
+
+.pagination-sm {
+    --pag-size: #{$input-height-sm};
+    --pag-padding-x: #{$pagination-padding-x-sm};
+    --pag-font-size: #{$font-size-sm};
+}
+
+.pagination-xs {
+    --pag-size: 28px;
+    --pag-padding-x: #{$pagination-padding-x-xs};
+    --pag-font-size: #{$font-size-xs};
+}
+
+.page-item {
+    display: block;
+}
+
+.page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: $font-weight-medium;
+    min-width: var(--pag-size);
+    height: var(--pag-size);
+    font-size: var(--pag-font-size);
+    line-height: var(--pag-size);
+    margin: var(--pag-margin);
+    padding: 0 var(--pag-padding-x);
+    border-radius: var(--pag-border-radius);
+
+    &:active {
+        background-color: $gray-300;
+    }
+}
+
+span.page-link {
+    cursor: default !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    padding: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/*.pagination-xs {
+    @include pagination-size($pagination-padding-y-xs, $pagination-padding-x-xs, $font-size-xs, $line-height-sm, $border-radius-sm);
+}*/
