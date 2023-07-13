@@ -515,6 +515,9 @@
             <LocaleResource Name="FullName.NotEmpty">
                 <Value>Bitte geben Sie Ihren vollständigen Namen an.</Value>
             </LocaleResource>
+            <LocaleResource Name="Address2">
+                <Value>Hausnummer</Value>
+            </LocaleResource>
             <LocaleResource Name="Country.NotEmpty">
                 <Value>Bitte wählen Sie ein Land aus.</Value>
             </LocaleResource>
@@ -526,6 +529,15 @@
             </LocaleResource>
             <LocaleResource Name="Error.CreditCardData">
                 <Value>Bitte überprüfen Sie Ihre Kreditkartendaten.</Value>
+            </LocaleResource>
+            <LocaleResource Name="CartHasChanged">
+                <Value>Ihr Warenkorb hat sich nach dem Login geändert. Bitte bestätigen Sie Ihren aktuellen Warenkorb bei PayPal.</Value>
+            </LocaleResource>
+            <LocaleResource Name="NoScriptsLoaded">
+                <Value>Für Zahlungen mit PayPal wurden die notwendigen Skripte nicht geladen.</Value>
+            </LocaleResource>
+            <LocaleResource Name="NoClientToken">
+                <Value>Die Zahlungsart Kreditkarte über PayPal ist derzeit nicht verfügbar. Bitte versuchen Sie es später noch einmal.</Value>
             </LocaleResource>
             <LocaleResource Name="SupportTools">
                 <Value>Support-Tools</Value>

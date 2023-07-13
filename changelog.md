@@ -1,5 +1,16 @@
 # Release Notes
 
+## Smartstore 5.1.0
+
+### New Features
+
+### Improvements
+
+### Bugfixes
+
+- Fixed a scripting issue where the input focus of the direct debit payment form was mistakenly set to a wrong input element.
+
+
 ## Smartstore 5.0.5
 
 ### Breaking Changes
@@ -21,6 +32,7 @@
   - #709 added an endpoint that returns order data prepared for an invoice (including variant SKU).
   - #717 added `GiftCard`, `GiftCardUsageHistory`, `DiscountUsageHistory`, `CheckoutAttribute` and `CheckoutAttributeValue`.
   - #723 store the SKU of the ordered product variant at the `OrderItem` entity.
+- Payment method brand icons can be displayed on product detail pages
 - Added settings for more social links (Flickr, LinkedIn, Xing, TikTok, Snapchat, Vimeo, Tumblr, Ello, Behance) to be displayed in the footer.
 - SEO: trailing slash options for internal links (*Append trailing slash to links*, *Trailing slash mismatch rule*)
 - #480 Product export: add a filter for categories and an option to include all sub-categories.
@@ -29,8 +41,12 @@
 
 ### Improvements
 
-- Better usability of the backend on small mobile devices (especially DataGrid)
+- Theming
+  - Better usability of the backend on small mobile devices (especially DataGrid)
+  - Updated FontAwesome library from version 6.0.0 to version 6.4.0
+  - Checkout / Payment page can display payment method brand icons
 - Increased performance: category tree path to filter products by categories.
+- DataGrid now remembers the search filter state across requests
 - Better PayPal implementaion: added providers for every single payment option.
 - New user agent parser with much better bot, mobile/tablet detection (but less accurate platform and device detection)
 - #416 Make the language name localizable.
@@ -65,6 +81,7 @@
   - Price calculation must respect `TaxSettings` of projected store.
   - Fixed wrong exported price when attribute combinations exported as products and price display type is set to lowest price.
   - When creating a profile, the public folder name of another profile should not be copied, but a unique, new folder name should be used.
+- Fixed picture and color control were not displayed when editing a product attribute option.
 - Fixed display of orders in MyAccount area when `OrderSettings.DisplayOrdersOfAllStores` was set to `true`
 - Fixed RTL theme Sass parsing error
 - When an order was placed, the stock quantity of attribute combinations were not updated if the stock is managed by attributes.

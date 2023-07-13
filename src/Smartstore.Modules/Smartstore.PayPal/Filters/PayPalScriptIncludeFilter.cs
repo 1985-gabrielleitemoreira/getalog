@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json.Linq;
 using Smartstore.Core;
 using Smartstore.Core.Checkout.Orders;
@@ -47,24 +49,35 @@ namespace Smartstore.PayPal.Filters
             _cookieConsentManager = cookieConsentManager;
         }
 
+        public ILogger Logger { get; set; } = NullLogger.Instance;
+
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
+            var isJsSDKMethodEnabled = await _payPalHelper.IsAnyProviderEnabledAsync(
+                PayPalConstants.Standard,
+                PayPalConstants.CreditCard,
+                PayPalConstants.PayLater,
+                PayPalConstants.Sepa);
+
+            if (isJsSDKMethodEnabled)
+            {
+                // INFO: Lets load the utility js regardsless of user consent. It doesn't set any cookies.
+                _widgetProvider.RegisterHtml("end", new HtmlString($"<script src='/Modules/Smartstore.PayPal/js/paypal.utils.js?v=5.0.5.0'></script>"));
+            }
+
             // TODO: (mh) Find a better (or safer) way to render this script.
             // The following prevents any PayPal script from being rendered if RequiredCookies weren't accepted yet.
             // It's a little bit problematic though for the case where a user accepts the cookies for the first time and directly adds a product to cart.
             // In this case the PayPal buttons won't be rendered in OffCanvasCart (because ConsentManager and OffCanvasCart don't require a new pageload).
             // But if the user then goes to the checkout page, the buttons will be rendered because its a new pageload.
+            // See https://github.com/smartstore/Smartstore/issues/762
             if (!await _cookieConsentManager.IsCookieAllowedAsync(CookieType.Required))
             {
                 await next();
                 return;
             }
 
-            if (await _payPalHelper.IsAnyProviderEnabledAsync(
-                PayPalConstants.Standard,
-                PayPalConstants.CreditCard,
-                PayPalConstants.PayLater,
-                PayPalConstants.Sepa))
+            if (isJsSDKMethodEnabled)
             {
                 // If client id or secret haven't been configured yet, don't show button.
                 if (!_settings.ClientId.HasValue() || !_settings.Secret.HasValue())
@@ -106,7 +119,6 @@ namespace Smartstore.PayPal.Filters
                     : string.Empty;
 
                 _widgetProvider.RegisterHtml("end", new HtmlString($"<script src='{scriptUrl}' data-partner-attribution-id='SmartStore_Cart_PPCP' data-client-token='{clientToken}' async id='paypal-js'></script>"));
-                _widgetProvider.RegisterHtml("end", new HtmlString($"<script src='/Modules/Smartstore.PayPal/js/paypal.utils.js'></script>"));
             }
 
             if (!await _payPalHelper.IsProviderEnabledAsync(PayPalConstants.PayUponInvoice))
@@ -201,19 +213,46 @@ namespace Smartstore.PayPal.Filters
             var session = httpContext.Session;
             
             var clientToken = session.GetString("PayPalClientToken");
-            if (clientToken.HasValue())
+            if (clientToken != null)
             {
-                return clientToken;
+                // If clientToken is empty, it means that the last attempt to get a client token failed.
+                if (clientToken == string.Empty)
+                {
+                    // Only try to retrive a new token when we've waited 5 minutes for the API to recover.
+                    var tokenFailedDate = session.GetString("PayPalTokenFailedDate");
+                    if (tokenFailedDate != null && DateTime.TryParse(tokenFailedDate, out var failedDate))
+                    {
+                        if ((DateTime.UtcNow - failedDate).TotalMinutes < 5)
+                        {
+                            return string.Empty;
+                        }
+                    }
+                }
+                else
+                {
+                    return clientToken;
+                }
             }
 
-            // Get client token from PayPal REST API.
-            var response = await _client.ExecuteRequestAsync(new GenerateClientTokenRequest());
-            var rawResponse = response.Body<object>().ToString();
-            dynamic jResponse = JObject.Parse(rawResponse);
+            try
+            {
+                // Get client token from PayPal REST API.
+                var response = await _client.ExecuteRequestAsync(new GenerateClientTokenRequest());
+                dynamic jResponse = JObject.Parse(response.Body<object>().ToString());
 
-            clientToken = (string)jResponse.client_token;
+                clientToken = (string)jResponse.client_token;
 
-            session.SetString("PayPalClientToken", clientToken);
+                session.SetString("PayPalClientToken", clientToken);
+                session.Remove("PayPalTokenFailedDate");
+            }
+            catch (Exception ex)
+            {
+                //In case of failure (maybe because the PayPal API is not responding)
+                //we set the client token to string.empty and remember the date when the token retrieval failed.
+                session.SetString("PayPalClientToken", string.Empty);
+                session.SetString("PayPalTokenFailedDate", DateTime.UtcNow.ToStringInvariant());
+                Logger.Error(ex);
+            }
 
             return clientToken;
         }

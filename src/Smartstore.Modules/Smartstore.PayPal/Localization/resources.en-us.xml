@@ -531,6 +531,9 @@
             <LocaleResource Name="FullName.NotEmpty">
                 <Value>Please enter your full name.</Value>
             </LocaleResource>
+            <LocaleResource Name="Address2">
+                <Value>Street number</Value>
+            </LocaleResource>
             <LocaleResource Name="Country.NotEmpty">
                 <Value>Please select a country.</Value>
             </LocaleResource>
@@ -543,7 +546,15 @@
             <LocaleResource Name="Error.CreditCardData">
                 <Value>Please verify your credit card information.</Value>
             </LocaleResource>
-            
+            <LocaleResource Name="CartHasChanged">
+                <Value>Your shopping cart has changed after login. Please confirm your current shopping cart with PayPal.</Value>
+            </LocaleResource>
+            <LocaleResource Name="NoScriptsLoaded">
+                <Value>For payments with PayPal the necessary scripts were not loaded.</Value>
+            </LocaleResource>
+            <LocaleResource Name="NoClientToken">
+                <Value>The credit card payment method via PayPal is currently not available. Please try again later.</Value>
+            </LocaleResource>
             <LocaleResource Name="SupportTools">
                 <Value>Support Tools</Value>
             </LocaleResource>

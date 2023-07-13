@@ -120,8 +120,10 @@ body {
     --sticky-header-left: var(--content-padding-x);
     --sticky-header-right: var(--content-padding-x);
     --header-height: 72px;
+    --device-height: 100vh; // for clients that do not support dvh
+    --device-height: 100dvh;
     --content-top: calc(72px + var(--header-height));
-    --content-height: calc(100% - var(--content-top) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    --content-height: calc(var(--device-height) - var(--content-top) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     --content-row: minmax(var(--content-height), auto);
     position: relative;
     display: grid;
@@ -149,7 +151,7 @@ body {
     padding-left: var(--content-padding-x);
     padding-right: var(--content-padding-x);
     padding-top: $section-header-height;
-    padding-bottom: #{"max(calc(10px + env(safe-area-inset-bottom, 0px)), var(--content-padding-x))"};
+    padding-bottom: var(--content-padding-x);
     box-shadow: $box-shadow-sm-var;
     border-radius: 0;
     background-color: #fff;
@@ -317,6 +319,10 @@ body {
         margin-left: 0;
         margin-right: 0;
         border-top-right-radius: 0;
+    }
+
+    .locale-editor {
+        max-width: calc(100dvw - var(--sticky-header-left) - (var(--content-padding-x) * 2));
     }
 }
 
@@ -886,52 +892,91 @@ legend {
     margin-bottom: 1rem;
     border-radius: $border-radius;
 
+    --tab-caption-display-xs: none;
+    --tab-caption-display-sm: var(--tab-caption-display-xs);
+    --tab-caption-display-md: var(--tab-caption-display-sm);
+    --tab-caption-display-lg: var(--tab-caption-display-md);
+    --tab-caption-display-xl: var(--tab-caption-display-lg);
+
     .nav-locales > .nav {
-        flex-wrap: nowrap;
-        padding: 0.25rem 0.25rem 0 0.25rem;
-        border-bottom-color: $border-color;
-        background-color: $card-cap-bg;
+        gap: 4px 2px;
+        padding: 0.4rem;
+        border-bottom: 1px solid $border-color;
+        background-color: $gray-100;
         border-top-left-radius: $border-radius;
         border-top-right-radius: $border-radius;
+        flex-wrap: nowrap;
+        overflow-x: auto;
 
-        .nav-item:not(:first-child) {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            min-width: 100px;
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-icon {
+            font-size: 1rem;
         }
 
         .nav-link {
-            color: #777;
-            font-weight: 600;
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
+            padding: 0.4rem 0.75rem;
+        }
 
-            > img {
-                opacity: 0.8;
+        .nav-item-master {
+            padding-right: 6px;
+
+            > .nav-link:after {
+                position: absolute;
+                content: "";
+                display: block;
+                width: 1px;
+                height: 100%;
+                right: 2px;
+                background-color: $border-color;
             }
+        }
 
-            > .tab-caption {
+        .nav-item-locale {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 1;
+            min-width: 38px;
+            max-width: 170px;
+
+            .tab-caption {
+                display: var(--tab-caption-display-xs);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+
+                @include media-breakpoint-up(sm) {
+                    display: var(--tab-caption-display-sm);
+                }
+
+                @include media-breakpoint-up(md) {
+                    display: var(--tab-caption-display-md);
+                }
+
+                @include media-breakpoint-up(lg) {
+                    display: var(--tab-caption-display-lg);
+                }
+
+                @include media-breakpoint-up(xl) {
+                    display: var(--tab-caption-display-xl);
+                }
             }
         }
 
-        .nav-link:hover,
-        .nav-link.active {
-            color: inherit;
-            border-color: transparent;
+        .nav-link {
+            font-weight: $font-weight-normal;
+            color: lighten($gray-700, 8%);
 
-            > img {
-                opacity: 1;
+            > img { opacity: 0.8; }
+
+            &:hover,
+            &.active {
+                color: inherit;
+                > img { opacity: 1; }
             }
-        }
-
-        .nav-link.active {
-            background-color: #fff;
-            border-color: $border-color;
-            border-bottom-color: #fff;
         }
     }
 }
@@ -1575,6 +1620,7 @@ a.editable {
     color: $text-muted;
     text-decoration: none;
     transition: color 0.12s ease;
+    pointer-events: auto;
 
     &:hover {
         color: $body-color;

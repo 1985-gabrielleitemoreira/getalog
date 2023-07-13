@@ -9,6 +9,28 @@ using Smartstore.IO;
 namespace Smartstore.Engine.Modularity
 {
     /// <summary>
+    /// Cached provider brand image URLs.
+    /// Brand images are located in the "wwwroot/brands" module subfolder.
+    /// </summary>
+    public class ProviderBrandImage
+    {
+        /// <summary>
+        /// Gets the fully qualified app relative path to the provider's default
+        /// brand image. The search pattern is:
+        /// "{SysName}.png", "{SysName}.gif", "{SysName}.jpg", "default.png", "default.gif", "default.jpg".
+        /// If no file is found, then the parent descriptor's 
+        /// <see cref="IModuleDescriptor.BrandImageFileName"/> will be returned instead.
+        /// </summary>
+        public string DefaultImageUrl { get; set; }
+
+        /// <summary>
+        /// Gets the fully qualified app relative paths to the provider's numbered brand images,
+        /// e.g. "provider-1.png", "provider-2.png" etc. Up to 5 images are allowed.
+        /// </summary>
+        public string[] NumberedImageUrls { get; set; }
+    }
+
+    /// <summary>
     /// A mediator between modules/providers and core application services: 
     /// provides localization, setting access, module instantiation etc.
     /// </summary>
@@ -81,7 +103,7 @@ namespace Smartstore.Engine.Modularity
 
             var invoker = keySelector.GetPropertyInvoker();
             var resourceName = string.Format("Plugins.{0}.{1}", invoker.Property.Name, descriptor.SystemName);
-            var result = _locService.GetResource(resourceName, languageId, false, string.Empty, true);
+            var result = _locService.GetResource(resourceName, languageId, logIfNotFound: false, returnEmptyIfNotFound: true);
 
             if (returnDefaultValue && result.IsEmpty())
             {
@@ -147,7 +169,8 @@ namespace Smartstore.Engine.Modularity
             return GetLocalizedValue(metadata, x => x.Description, languageId, returnDefaultValue);
         }
 
-        public string GetLocalizedValue<TMetadata>(TMetadata metadata,
+        public string GetLocalizedValue<TMetadata>(
+            TMetadata metadata,
             Expression<Func<TMetadata, string>> keySelector,
             int languageId = 0,
             bool returnDefaultValue = true)
@@ -158,9 +181,12 @@ namespace Smartstore.Engine.Modularity
 
             var invoker = keySelector.GetPropertyInvoker();
             var resourceName = metadata.ResourceKeyPattern.FormatInvariant(metadata.SystemName, invoker.Property.Name);
-            var result = _locService.GetResource(resourceName, languageId, false, string.Empty, true);
+            // INFO: " " instead of "" --> hackish approach to overcome the limitation
+            // that we don't have a fallbackToMaster parameter. I don't want to change interface
+            // signatures right now.
+            var result = _locService.GetResource(resourceName, languageId, false, " ", true).Trim();
 
-            if (returnDefaultValue && result.IsEmpty())
+            if (returnDefaultValue && string.IsNullOrEmpty(result))
             {
                 result = invoker.Invoke(metadata);
             }
@@ -242,62 +268,95 @@ namespace Smartstore.Engine.Modularity
         }
 
         /// <summary>
-        /// Gets the fully qualified app relative path to a provider's default
-        /// brand image which is located in the module's <c>wwwroot/brands</c> directory.
-        /// The search pattern is:
-        /// "{SysName}.png", "{SysName}.gif", "{SysName}.jpg", "default.png", "default.gif", "default.jpg".
-        /// If no file is found, then the parent descriptor's 
-        /// <see cref="IModuleDescriptor.BrandImageFileName"/> will be returned instead.
+        /// Gets a cached instance of the <see cref="ProviderBrandImage"/> class
+        /// containing URLs to the resolved provider brand images 
+        /// in the "wwwroot/brands" directory.
         /// </summary>
-        /// <remarks>
-        /// The resolution result is cached.
-        /// </remarks>
-        public string GetDefaultBrandImageUrl(ProviderMetadata metadata)
+        public ProviderBrandImage GetBrandImage(ProviderMetadata metadata)
         {
             var descriptor = metadata.ModuleDescriptor;
             
             if (descriptor != null)
             {
                 var systemName = metadata.SystemName.ToLower();
-                var cacheKey = $"DefaultBrandImageUrl.{systemName}";
+                var cacheKey = $"ProviderBrandImage.{systemName}";
 
-                return _cache.Get(cacheKey, () => 
+                return _cache.Get(cacheKey, o => 
                 {
-                    // Check provider specific icons.
-                    var filesToCheck = new List<string> { "{0}.png", "{0}.gif", "{0}.jpg", "default.png", "default.gif", "default.jpg" }
-                        .Select(x => x.FormatInvariant(systemName))
-                        .ToList();
-
+                    o.ExpiresIn(TimeSpan.FromDays(1));
+                    
+                    var result = new ProviderBrandImage();
+                    var extensions = new[] { "png", "gif", "jpg" };
                     var fs = descriptor.WebRoot as IFileSystem;
-                    foreach (var file in filesToCheck)
+
+                    // Find [systemName].[ext]
+                    if (TryFindFile(systemName, out var defaultImageUrl))
                     {
-                        if (fs.FileExists("brands/" + file))
+                        result.DefaultImageUrl = defaultImageUrl;
+                    }
+                    // Find default.[ext]
+                    else if (TryFindFile("default", out defaultImageUrl))
+                    {
+                        result.DefaultImageUrl = defaultImageUrl;
+                    }
+
+                    if (defaultImageUrl == null)
+                    {
+                        // No default image found, take fallback.
+                        if (metadata.GroupName == "Payment")
                         {
-                            return WebHelper.ToAppRelativePath(PathUtility.Combine(descriptor.Path, "brands", file));
+                            result.DefaultImageUrl = WebHelper.ToAppRelativePath("images/default-payment-icon.png");
+                        }
+                        else if (descriptor.BrandImageFileName.HasValue())
+                        {
+                            result.DefaultImageUrl = WebHelper.ToAppRelativePath(PathUtility.Combine(descriptor.Path, descriptor.BrandImageFileName));
                         }
                     }
 
-                    if (metadata.GroupName == "Payment")
+                    // Payment methods like credit card can have multiple brands like
+                    // Master Card, Visa, etc. 5 Icons per provider should be enough.
+                    var numberedImages = new List<string>(5);
+                    for (var i = 1; i <= 5; i++)
                     {
-                        return WebHelper.ToAppRelativePath("images/default-payment-icon.png");
+                        // Find [systemName]-[i].[ext]
+                        if (!TryFindFile($"{systemName}-{i}", out var numberedImageUrl))
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            numberedImages.Add(numberedImageUrl);
+                        }
                     }
 
-                    // Try to find fallback icon branding.png.
-                    if (descriptor.BrandImageFileName.HasValue())
+                    if (result.DefaultImageUrl == null && numberedImages.Count > 0)
                     {
-                        return WebHelper.ToAppRelativePath(PathUtility.Combine(descriptor.Path, descriptor.BrandImageFileName));
+                        result.DefaultImageUrl = numberedImages[0];
                     }
 
-                    return string.Empty;
+                    result.NumberedImageUrls = numberedImages.ToArray();
+
+                    return result;
+
+                    bool TryFindFile(string name, out string url)
+                    {
+                        url = null;
+
+                        foreach (var ext in extensions)
+                        {
+                            var subpath = PathUtility.Combine("brands", $"{name}.{ext}");
+                            if (fs.FileExists(subpath))
+                            {
+                                url = WebHelper.ToAppRelativePath(PathUtility.Combine(descriptor.Path, subpath));
+                                return true;
+                            }
+                        }
+
+                        return false;
+                    }
                 });
             }
 
-            return string.Empty;
-        }
-
-        public string[] GetBrandImageUrls(ProviderMetadata metadata)
-        {
-            // TODO: continue...
             return null;
         }
 

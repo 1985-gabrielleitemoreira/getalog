@@ -519,13 +519,24 @@ namespace Smartstore.Web.Rendering
                 var languages = new List<Language>(locales.Count + 1);
                 var allLanguages = languageService.GetAllLanguages(true).ToDictionary(x => x.Id);
 
+                var num = locales.Count;
+                var size = num <= 3
+                    ? "xs"
+                    : (num <= 5
+                        ? "sm"
+                        : (num <= 8
+                            ? "md"
+                            : (num <= 16
+                                ? "lg"
+                                : "xl")));
+
                 // Create the parent tabstrip
                 var strip = new TabStripTagHelper
                 {
                     ViewContext = helper.ViewContext,
                     Id = name,
                     SmartTabSelection = false,
-                    Style = TabsStyle.Tabs,
+                    Style = TabsStyle.Pills,
                     PublishEvent = false
                 };
 
@@ -535,12 +546,18 @@ namespace Smartstore.Web.Rendering
                     languages.Add(masterLanguage);
 
                     // Add the first default tab for the master template
-                    tabs.Add(new TabItem
+                    var tabItem = new TabItem
                     {
                         Selected = true,
                         Text = localizationService.GetResource("Admin.Common.Standard"),
-                        Content = masterTemplate(helper.ViewData.Model).ToHtmlString()
-                    });
+                        Content = masterTemplate(helper.ViewData.Model).ToHtmlString(),
+                        Icon = "fa fa-globe"
+                    };
+
+                    tabItem.HtmlAttributes.Merge("class", "nav-item-master");
+                    tabItem.LinkHtmlAttributes.Merge("class", "btn btn-light btn-sm");
+
+                    tabs.Add(tabItem);
                 }
 
                 // Add all language specific tabs
@@ -550,13 +567,18 @@ namespace Smartstore.Web.Rendering
                     var language = allLanguages.Get(locale.LanguageId);
                     languages.Add(language);
 
-                    tabs.Add(new TabItem
+                    var tabItem = new TabItem
                     {
                         Selected = !hasMasterTemplate && i == 0,
                         Text = language.GetLocalized(x => x.Name),
                         ImageUrl = "~/images/flags/" + language.FlagImageFileName,
                         Content = localizedTemplate(i).ToHtmlString()
-                    });
+                    };
+
+                    tabItem.HtmlAttributes.Merge("class", "nav-item-locale");
+                    tabItem.LinkHtmlAttributes.Merge("class", "btn btn-light btn-sm");
+
+                    tabs.Add(tabItem);
                 }
 
                 // Create TagHelperContext for tabstrip.
@@ -603,6 +625,7 @@ namespace Smartstore.Web.Rendering
 
                 var wrapper = new TagBuilder("div");
                 wrapper.Attributes.Add("class", "locale-editor");
+                wrapper.Attributes.Add("style", $"--tab-caption-display-{size}: inline");
 
                 return stripOutput.WrapElementWith(wrapper);
             }

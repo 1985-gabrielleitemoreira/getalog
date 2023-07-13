@@ -325,7 +325,7 @@ namespace Smartstore.StripeElements.Controllers
                     }
                     else
                     {
-                        Logger.Warn(T("Plugins.Payments.Stripe.OrderNotFound", paymentIntent.Id));
+                        Logger.Warn(T("Plugins.Smartstore.Stripe.OrderNotFound", paymentIntent.Id));
                         return Ok();
                     }
                 }
@@ -349,7 +349,7 @@ namespace Smartstore.StripeElements.Controllers
                     }
                     else
                     {
-                        Logger.Warn(T("Plugins.Payments.Stripe.OrderNotFound", paymentIntent.Id));
+                        Logger.Warn(T("Plugins.Smartstore.Stripe.OrderNotFound", paymentIntent.Id));
                         return Ok();
                     }
                 }
@@ -393,13 +393,13 @@ namespace Smartstore.StripeElements.Controllers
                     }
                     else
                     {
-                        Logger.Warn(T("Plugins.Payments.Stripe.OrderNotFound", charge.PaymentIntentId));
+                        Logger.Warn(T("Plugins.Smartstore.Stripe.OrderNotFound", charge.PaymentIntentId));
                         return Ok();
                     }
                 }
                 else
                 {
-                    Logger.Warn(T("Unhandled event type: {0}", stripeEvent.Type));
+                    Logger.Warn("Unhandled Stripe event type: {0}", stripeEvent.Type);
                 }
 
                 return Ok();
@@ -421,10 +421,7 @@ namespace Smartstore.StripeElements.Controllers
         {
             if (charge != null)
             {
-                order.OrderNotes.Add(new OrderNote { 
-                    DisplayToCustomer = true, 
-                    Note = $"Reason for Charge-ID {charge.Id}: {charge.Refunds.FirstOrDefault().Reason} - {charge.Description}" }
-                );
+                order.AddOrderNote($"Reason for Charge-ID {charge.Id}: {charge.Refunds.FirstOrDefault().Reason} - {charge.Description}", true);
             }
         }
     }

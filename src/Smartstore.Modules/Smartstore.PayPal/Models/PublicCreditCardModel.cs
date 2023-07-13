@@ -3,35 +3,41 @@ using FluentValidation;
 
 namespace Smartstore.PayPal.Models
 {
+    [LocalizedDisplay("Address.Fields.")]
     public class PublicCreditCardModel : ModelBase
     {
         [LocalizedDisplay("Payment.CardholderName")]
         public string CardholderName { get; set; }
 
-        [LocalizedDisplay("Address.Fields.City")]
+        [LocalizedDisplay("*City")]
         public string City { get; set; }
 
-        [LocalizedDisplay("Address.Fields.Address1")]
+        [LocalizedDisplay("*Address1")]
         public string Address1 { get; set; }
 
-        [LocalizedDisplay("Address.Fields.Address2")]
+        [LocalizedDisplay("Plugins.Smartstore.PayPal.Address2")]
         public string Address2 { get; set; }
 
-        [LocalizedDisplay("Address.Fields.ZipPostalCode")]
+        [LocalizedDisplay("*ZipPostalCode")]
         public string ZipPostalCode { get; set; }
 
-        [LocalizedDisplay("Address.Fields.Country")]
+        [LocalizedDisplay("*Country")]
         public string Country { get; set; }
 
-        [LocalizedDisplay("Address.Fields.Country")]
+        [LocalizedDisplay("*Country")]
         [UIHint("Countries")]
         public int? CountryId { get; set; }
 
-        [LocalizedDisplay("Address.Fields.StateProvince")]
+        [LocalizedDisplay("*StateProvince")]
         public int? StateProvinceId { get; set; }
 
-        [LocalizedDisplay("Address.Fields.StateProvince")]
+        [LocalizedDisplay("*StateProvince")]
         public string StateProvince { get; set; }
+
+        /// <summary>
+        /// A value indicating whether the client token was retrieved from the PayPal API.
+        /// </summary>
+        public bool HasClientToken { get; set; }
     }
 
     public partial class PayPalCreditCardValidator : SmartValidator<PublicCreditCardModel>

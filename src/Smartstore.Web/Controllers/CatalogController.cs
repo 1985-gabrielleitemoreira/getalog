@@ -308,7 +308,7 @@ namespace Smartstore.Web.Controllers
             var templateViewPath = await Services.Cache.GetAsync(templateCacheKey, async () =>
             {
                 var template = await _db.ManufacturerTemplates.FindByIdAsync(manufacturer.ManufacturerTemplateId, false)
-                    ?? await _db.ManufacturerTemplates.FirstOrDefaultAsync();
+                    ?? await _db.ManufacturerTemplates.AsNoTracking().OrderBy(x => x.DisplayOrder).FirstOrDefaultAsync();
 
                 return template.ViewPath;
             });
@@ -674,12 +674,14 @@ namespace Smartstore.Web.Controllers
         [ActionName("ClearCompareList")]
         public IActionResult ClearCompareListAjax()
         {
-            _productCompareService.ClearCompareList();
+            if (_catalogSettings.CompareProductsEnabled)
+            {
+                _productCompareService.ClearCompareList();
+            }
 
             return Json(new
             {
-                success = true,
-                message = T("CompareList.ListWasCleared")
+                success = true
             });
         }
 
